@@ -99,7 +99,8 @@
     <script>
         // Note: To make this app production-ready, replace the API URL below 
         // with your own endpoint from a service like GoldAPI.io or Metals-API.com
-        const apiKey = 'YOUR_FREE_API_KEY'; 
+        // Paste your GoldAPI key inside the quotes below
+        const apiKey = 'goldapi-41dc67b10b2e6bb45c46eaa336d135e2-io'; 
         
         // Setting up the Chart.js instance
         const ctx = document.getElementById('goldChart').getContext('2d');
@@ -131,39 +132,58 @@
 
         async function fetchGoldPrice() {
             try {
-                // For demonstration, we are simulating a data fetch. 
-                // In a live environment, use fetch('https://www.goldapi.io/api/XAU/USD', { headers: { 'x-access-token': apiKey } })
+                document.getElementById('last-updated').innerText = 'Fetching live data...';
+
+                // 1. Fetch Live USD Price from GoldAPI
+                const responseUSD = await fetch('https://www.goldapi.io/api/XAU/USD', {
+                    method: 'GET',
+                    headers: {
+                        'x-access-token': apiKey,
+                        'Content-Type': 'application/json'
+                    }
+                });
                 
-                // Simulated API Response based on current market estimates
-                const simulatedUSD = (4550 + (Math.random() * 50 - 25)).toFixed(2);
-                const exchangeRateMYR = 4.75; // Simulated USD to MYR rate
-                const simulatedMYR = (simulatedUSD * exchangeRateMYR).toFixed(2);
+                if (!responseUSD.ok) throw new Error("API Limit Reached or Invalid Key");
+                const dataUSD = await responseUSD.json();
+                const liveUSD = dataUSD.price;
+
+                // 2. Fetch Live MYR Price from GoldAPI
+                const responseMYR = await fetch('https://www.goldapi.io/api/XAU/MYR', {
+                    method: 'GET',
+                    headers: {
+                        'x-access-token': apiKey,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const dataMYR = await responseMYR.json();
+                const liveMYR = dataMYR.price;
+
                 const now = new Date();
                 const timeString = now.toLocaleTimeString();
 
-                // Update UI Text
-                document.getElementById('price-usd').innerText = `$${simulatedUSD}`;
-                document.getElementById('price-myr').innerText = `RM ${simulatedMYR}`;
+                // 3. Update UI Text
+                document.getElementById('price-usd').innerText = `$${liveUSD.toFixed(2)}`;
+                document.getElementById('price-myr').innerText = `RM ${liveMYR.toFixed(2)}`;
                 document.getElementById('last-updated').innerText = `Last Updated: ${now.toLocaleString()}`;
 
-                // Update Chart
+                // 4. Update Chart
                 if (goldChart.data.labels.length > 10) {
                     goldChart.data.labels.shift();
                     goldChart.data.datasets[0].data.shift();
                 }
                 goldChart.data.labels.push(timeString);
-                goldChart.data.datasets[0].data.push(simulatedUSD);
+                goldChart.data.datasets[0].data.push(liveUSD);
                 goldChart.update();
 
             } catch (error) {
                 console.error('Error fetching gold price:', error);
-                document.getElementById('last-updated').innerText = 'Error fetching data. Check console.';
+                document.getElementById('last-updated').innerText = 'Error: Check console or API limit.';
             }
         }
 
-        // Fetch price on load and then every 60 seconds
+        // Fetch price immediately on load
         fetchGoldPrice();
-        setInterval(fetchGoldPrice, 60000);
-    </script>
-</body>
-</html>
+        
+        // Refresh every 30 minutes (1,800,000 milliseconds) to stay under the 100 requests/day limit.
+        // 2 calls (USD & MYR) per 30 mins = 96 calls a day. 
+        setInterval(fetchGoldPrice, 1800000);
