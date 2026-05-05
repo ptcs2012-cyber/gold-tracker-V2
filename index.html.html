@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Gold Price Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .dashboard {
+            background-color: #1e1e1e;
+            border-radius: 12px;
+            padding: 30px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+        h1 {
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+        .status {
+            font-size: 0.9em;
+            color: #888;
+            margin-bottom: 20px;
+        }
+        .price-container {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #2a2a2a;
+            border-radius: 8px;
+        }
+        .price-box h2 {
+            margin: 0;
+            font-size: 1.2em;
+            color: #aaa;
+        }
+        .price-box p {
+            margin: 10px 0 0 0;
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #4caf50;
+        }
+        canvas {
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #ffd700;
+            color: #121212;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <h1>XAU Live Tracker</h1>
+        <div class="status" id="last-updated">Last Updated: Fetching...</div>
+
+        <div class="price-container">
+            <div class="price-box">
+                <h2>USD / oz</h2>
+                <p id="price-usd">--</p>
+            </div>
+            <div class="price-box">
+                <h2>MYR / oz</h2>
+                <p id="price-myr">--</p>
+            </div>
+        </div>
+
+        <canvas id="goldChart" width="400" height="200"></canvas>
+        <button onclick="fetchGoldPrice()">Refresh Price</button>
+    </div>
+
+    <script>
+        // Note: To make this app production-ready, replace the API URL below 
+        // with your own endpoint from a service like GoldAPI.io or Metals-API.com
+        const apiKey = 'YOUR_FREE_API_KEY'; 
+        
+        // Setting up the Chart.js instance
+        const ctx = document.getElementById('goldChart').getContext('2d');
+        const goldChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [], // Time labels
+                datasets: [{
+                    label: 'Gold Price (USD)',
+                    data: [],
+                    borderColor: '#ffd700',
+                    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { ticks: { color: '#aaa' } },
+                    y: { ticks: { color: '#aaa' } }
+                },
+                plugins: {
+                    legend: { labels: { color: '#fff' } }
+                }
+            }
+        });
+
+        async function fetchGoldPrice() {
+            try {
+                // For demonstration, we are simulating a data fetch. 
+                // In a live environment, use fetch('https://www.goldapi.io/api/XAU/USD', { headers: { 'x-access-token': apiKey } })
+                
+                // Simulated API Response based on current market estimates
+                const simulatedUSD = (4550 + (Math.random() * 50 - 25)).toFixed(2);
+                const exchangeRateMYR = 4.75; // Simulated USD to MYR rate
+                const simulatedMYR = (simulatedUSD * exchangeRateMYR).toFixed(2);
+                const now = new Date();
+                const timeString = now.toLocaleTimeString();
+
+                // Update UI Text
+                document.getElementById('price-usd').innerText = `$${simulatedUSD}`;
+                document.getElementById('price-myr').innerText = `RM ${simulatedMYR}`;
+                document.getElementById('last-updated').innerText = `Last Updated: ${now.toLocaleString()}`;
+
+                // Update Chart
+                if (goldChart.data.labels.length > 10) {
+                    goldChart.data.labels.shift();
+                    goldChart.data.datasets[0].data.shift();
+                }
+                goldChart.data.labels.push(timeString);
+                goldChart.data.datasets[0].data.push(simulatedUSD);
+                goldChart.update();
+
+            } catch (error) {
+                console.error('Error fetching gold price:', error);
+                document.getElementById('last-updated').innerText = 'Error fetching data. Check console.';
+            }
+        }
+
+        // Fetch price on load and then every 60 seconds
+        fetchGoldPrice();
+        setInterval(fetchGoldPrice, 60000);
+    </script>
+</body>
+</html>
